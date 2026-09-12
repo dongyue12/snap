@@ -8,7 +8,28 @@
 # 注意：脚本会把沙箱目录整个删掉重建，所以不要指向有真实内容的目录。
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-BIN="${SNAP_BIN:-$HERE/../target/release/snap.exe}"
+
+# 找可执行文件：优先 SNAP_BIN，其次 target/release，再退到 target/debug，
+# 都没有就自己构建（CI 上 cargo test 只产出 debug 产物，没有 release）
+find_bin() {
+  if [ -n "${SNAP_BIN:-}" ]; then printf '%s' "$SNAP_BIN"; return; fi
+  for cand in "$HERE/../target/release/snap.exe" "$HERE/../target/release/snap"               "$HERE/../target/debug/snap.exe" "$HERE/../target/debug/snap"; do
+    if [ -x "$cand" ]; then printf '%s' "$cand"; return; fi
+  done
+  printf ''
+}
+
+BIN="$(find_bin)"
+if [ -z "$BIN" ]; then
+  echo "没找到 snap 可执行文件，正在构建 release（cargo build --release --locked）..."
+  ( cd "$HERE/.." && cargo build --release --locked ) || { echo "构建失败，中止" >&2; exit 2; }
+  BIN="$(find_bin)"
+fi
+if [ -z "$BIN" ]; then
+  echo "仍然找不到可执行文件；请用 SNAP_BIN=/path/to/snap 指定" >&2
+  exit 2
+fi
+echo "使用可执行文件: $BIN"
 W="${SNAP_SANDBOX:-$HERE/../../../test}"
 
 PASS=0; FAIL=0; FAILED=()

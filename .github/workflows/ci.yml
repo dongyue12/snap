@@ -11,13 +11,9 @@ defaults:
     working-directory: rust/snap
 
 jobs:
-  test:
-    name: ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [windows-latest, ubuntu-latest, macos-latest]
+  windows:
+    name: Windows
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
 
@@ -35,9 +31,34 @@ jobs:
       - name: 静态检查
         run: cargo clippy --all-targets -- -D warnings
 
-      - name: 测试（单元 + 命令行集成）
+      - name: 测试（8 单元 + 31 命令行集成）
         run: cargo test
 
+      # 场景测试会自己在 target/release 与 target/debug 里找可执行文件：
+      # 前面只跑过 cargo test，所以它会用 debug 产物；都找不到时自己构建。
       - name: 场景测试（真实文件上跑一遍全部命令）
         shell: bash
         run: SNAP_SANDBOX="$RUNNER_TEMP/snap-sandbox" bash tests/scenario.sh
+
+      - name: 打包（可执行文件 + README + LICENSE，并输出 SHA256）
+        shell: bash
+        run: bash ../../scripts/package.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: snap-windows
+          path: dist/*.zip
+          if-no-files-found: error
+
+# Linux / macOS 以后再开：把下面的注释去掉，并删掉上面那个 job 的矩阵即可。
+# 注意 tests/scenario.sh 已经做过跨平台处理（不依赖 GNU 专有命令、不写死本机路径）。
+#
+#   linux:
+#     name: Linux
+#     runs-on: ubuntu-latest
+#     steps:  # 与 windows 相同
+#
+#   macos:
+#     name: macOS
+#     runs-on: macos-latest
+#     steps:  # 与 windows 相同
