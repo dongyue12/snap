@@ -1,5 +1,7 @@
 # snap
 
+[![CI](https://github.com/dongyue12/snap/actions/workflows/ci.yml/badge.svg)](https://github.com/dongyue12/snap/actions/workflows/ci.yml)
+
 极简的项目版本快照工具 —— **给一个目录整目录打快照，存一个版本、切回一个版本**。
 不做分支、不做合并、不连远程仓库，只有"存"和"切"这两件事。
 
