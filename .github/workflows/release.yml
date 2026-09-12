@@ -34,7 +34,7 @@ jobs:
         run: |
           VERSION="$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -1)"
           if [ "v$VERSION" != "$GITHUB_REF_NAME" ]; then
-            echo "标签 $GITHUB_REF_NAME 与 Cargo.toml 里的版本 v$VERSION 不一致"
+            echo "标签 $GITHUB_REF_NAME 与 Cargo.toml 里的版本 v$VERSION 不一致，中止"
             exit 1
           fi
           echo "版本一致: v$VERSION"
@@ -61,17 +61,37 @@ jobs:
         shell: bash
         run: bash ../../scripts/package.sh
 
-      - name: 创建 Release 并附上产物
+      - name: 创建 Release（说明取自 CHANGELOG，附上 SHA256）
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           TAG="$GITHUB_REF_NAME"
+          VERSION="${TAG#v}"
           ZIP_PATH="$(ls "$GITHUB_WORKSPACE"/dist/*.zip)"
           SHA_PATH="$(ls "$GITHUB_WORKSPACE"/dist/*.sha256)"
           echo "附上: $ZIP_PATH"
-          # --generate-notes 让 GitHub 按提交自动生成发布说明
+
+          # 抽 CHANGELOG.md 里这个版本的那一节。
+          # 用 index() 而不是正则，省得跟方括号的转义较劲。
+          NOTES="$(awk -v v="$VERSION" '
+            index($0, "## [" v "]") == 1 { found = 1; next }
+            found && index($0, "## [") == 1 { exit }
+            found { print }
+          ' "$GITHUB_WORKSPACE/CHANGELOG.md")"
+          if [ -z "$(printf '%s' "$NOTES" | tr -d '[:space:]')" ]; then
+            NOTES="（CHANGELOG.md 里没有 $VERSION 这一节，记得补上）"
+          fi
+
+          NOTES_FILE="$RUNNER_TEMP/release-notes.md"
+          {
+            printf '%s\n' "$NOTES"
+            printf '\n---\n\n### 校验值\n\n```\n'
+            cat "$SHA_PATH"
+            printf '```\n'
+          } > "$NOTES_FILE"
+
           gh release create "$TAG" "$ZIP_PATH" "$SHA_PATH" \
-            --title "snap ${TAG#v}" \
-            --generate-notes
+            --title "snap $VERSION" \
+            --notes-file "$NOTES_FILE"
