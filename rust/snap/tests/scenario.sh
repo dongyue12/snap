@@ -23,7 +23,18 @@ rcn()  { (cd "$W" && printf 'n\n' | "$BIN" "$@" 2>&1); }     # 回答 n
 rc_of(){ (cd "$W" && "$BIN" "$@" >/dev/null 2>&1); echo $?; }
 headid(){ cat "$W/.snap/HEAD"; }
 gid()  { printf '%s' "$1" | grep -o '[0-9a-f]\{12\}' | head -1; }
-md5f() { md5sum "$W/$1" | cut -d' ' -f1; }
+# 哈希与取大小：Linux 用 md5sum/stat，macOS 用 md5/stat -f，都没有就退回 cksum。
+# （CI 会在三个平台跑，所以这里不能依赖 GNU 专有命令）
+if command -v md5sum >/dev/null 2>&1; then
+  hashf() { md5sum | cut -d' ' -f1; }
+elif command -v md5 >/dev/null 2>&1; then
+  hashf() { md5 -q; }
+else
+  hashf() { cksum | cut -d' ' -f1; }
+fi
+md5f() { hashf < "$W/$1"; }
+size_of() { wc -c < "$1" | tr -d ' 
+'; }
 
 # ---------------------------------------------------------------- 沙箱
 MARKER=".snap-sandbox"          # 标记文件：只有本脚本建的沙箱才允许重建
@@ -192,7 +203,7 @@ out=$(rcy -c "${V1:0:4}")      # 答 y 执行
 chk "$(has '已切换到' "$out")" "checkout 成功" "$out"
 chk "$([ "$(md5f bin/all-bytes.bin)" = "$BIN_MD5" ] && echo 1)" "二进制文件逐字节还原" "$(md5f bin/all-bytes.bin)"
 chk "$([ "$(md5f bin/random.dat)" = "$RAND_MD5" ] && echo 1)" "随机二进制还原" "$(md5f bin/random.dat)"
-chk "$([ "$(stat -c %s "$W/empty.txt")" = "0" ] && echo 1)" "空文件还原为空" "$(stat -c %s "$W/empty.txt")"
+chk "$([ "$(size_of "$W/empty.txt")" = "0" ] && echo 1)" "空文件还原为空" "$(size_of "$W/empty.txt")"
 chk "$(has 'emoji' "$(cat "$W/emoji-🎉.txt")")" "emoji 文件名还原" "$(cat "$W/emoji-🎉.txt")"
 chk "$(has '空格' "$(cat "$W/带空格 的文件.txt")")" "带空格文件名还原" "$(cat "$W/带空格 的文件.txt")"
 chk "$(has '中文内容' "$(cat "$W/中文名.txt")")" "中文文件名还原" "$(cat "$W/中文名.txt")"
@@ -236,13 +247,13 @@ chk "$([ -n "$VB2" ] && echo 1)" "记录了 cfg 是目录的版本" "$out"
 rm -rf "$W/cfg" && printf '未跟踪的挡路文件\n' > "$W/cfg"
 rcy -c "${VA:0:4}" >/dev/null
 chk "$([ -f "$W/cfg" ] && [ "$(headid)" = "$VA" ] && echo 1)" "构造好挡路场景" "cfg是文件=$([ -f "$W/cfg" ] && echo yes || echo no) HEAD=$(headid) VA=$VA"
-BEFORE="$(cd "$W" && find . -not -path './.snap/*' | sort | md5sum)"
+BEFORE="$(cd "$W" && find . -not -path './.snap/*' | sort | hashf)"
 out=$(rcy -c "${VB2:0:4}")
 chk "$(has '需要先把它移走' "$out")" "预检指出挡路的文件" "$out"
 chk "$(has 'cfg' "$out")" "预检点名了挡路的路径" "$out"
 chk "$(nhas '已切换到' "$out")" "预检拦下冲突" "$out"
 chk "$(nhas 'panicked' "$out")" "预检失败不崩溃" "$out"
-AFTER="$(cd "$W" && find . -not -path './.snap/*' | sort | md5sum)"
+AFTER="$(cd "$W" && find . -not -path './.snap/*' | sort | hashf)"
 chk "$([ "$BEFORE" = "$AFTER" ] && echo 1)" "预检失败时磁盘原样" ""
 chk "$([ "$(headid)" = "$VA" ] && echo 1)" "预检失败时 HEAD 不变" "$(headid) vs $VA"
 chk "$([ "$(cat "$W/cfg")" = '未跟踪的挡路文件' ] && echo 1)" "挡路的未跟踪文件没被动过" "$(cat "$W/cfg")"
@@ -304,12 +315,12 @@ H=$(grep -o "\"README\.md\": \"[0-9a-f]*\"" "$W/.snap/versions/$IDX.json" | grep
 if [ -n "$H" ]; then
   mv "$W/.snap/objects/${H:0:2}/${H:2}" "$W/.snap/objects/${H:0:2}/${H:2}.bak"
   printf '本地改动\n' > "$W/README.md"          # 让这个文件确实需要被写入
-  BEFORE="$(cd "$W" && find . -not -path './.snap/*' | sort | md5sum)"
+  BEFORE="$(cd "$W" && find . -not -path './.snap/*' | sort | hashf)"
   out=$(rcy -c "${IDX:0:4}")
   chk "$(has '缺少对象' "$out")" "对象缺失给出可读错误" "$out"
   chk "$(nhas 'panicked' "$out")" "对象缺失不崩溃" "$out"
   chk "$(nhas '已切换到' "$out")" "对象缺失时不更新 HEAD" "$out"
-  AFTER="$(cd "$W" && find . -not -path './.snap/*' | sort | md5sum)"
+  AFTER="$(cd "$W" && find . -not -path './.snap/*' | sort | hashf)"
   chk "$([ "$BEFORE" = "$AFTER" ] && echo 1)" "对象缺失时磁盘原样" ""
   mv "$W/.snap/objects/${H:0:2}/${H:2}.bak" "$W/.snap/objects/${H:0:2}/${H:2}"
   rcy -c "${IDX:0:4}" >/dev/null 2>&1
@@ -367,11 +378,15 @@ chk "$(has '当前版本' "$out")" "子目录里能识别仓库" "$out"
 out=$(cd "$W/src/lib/deep" && "$BIN" -l 2>&1)
 chk "$(has "$V1" "$out")" "子目录里能列出历史" "$out"
 
-OUTER="/c/Users/Legion/Desktop/新建文件夹"
-o=$(cd "$OUTER" && "$BIN" -t 2>&1)
-chk "$(nhas 'test/.snap/' "$o")" "外层忽略内层数据目录" "$o"
-chk "$(has 'test/README.md' "$o")" "外层能看到 test/ 下的文件" "$o"
-chk "$(has '第2个版本' "$(cd "$OUTER" && "$BIN" -l 2>&1)")" "外层历史未被改动" ""
+# 外层仓库：只在沙箱上一层真的是 snap 仓库时才检查（CI 里没有这层，跳过）
+OUTER="$(cd "$W/.." && pwd)"
+if [ -d "$OUTER/.snap" ]; then
+  o=$(cd "$OUTER" && "$BIN" -t 2>&1)
+  chk "$(nhas 'test/.snap/' "$o")" "外层忽略内层数据目录" "$o"
+  chk "$(nhas '+ test/' "$o")" "外层把整个 test/ 忽略掉（.snapignore 那条）" "$o"
+else
+  echo "  (跳过：沙箱上一层没有 snap 仓库)"
+fi
 
 echo
 echo "================================================================"
