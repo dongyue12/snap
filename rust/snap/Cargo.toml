@@ -1,6 +1,6 @@
 [package]
 name = "snap"
-version = "1.0.0"
+version = "1.0.1"
 edition = "2024"
 rust-version = "1.85"
 description = "极简项目版本快照工具：整目录打快照，存一个版本、切回一个版本"
