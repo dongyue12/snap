@@ -16,11 +16,29 @@
 
 ## 安装
 
-从 [Releases](https://github.com/dongyue12/snap/releases) 下载 `snap-<版本>-<平台>.zip`，
-解压后把 `snap.exe` 放到任意目录即可（单文件，无运行时依赖）。
+从 [Releases](https://github.com/dongyue12/snap/releases) 下载 `snap-<版本>-<平台>.zip`。
 
-想在任何目录直接敲 `snap`，用 `scripts` 里的脚本把它所在目录加进 PATH
-（放在 `snap.exe` 旁边，双击 .bat 也行；改前会自动备份原 PATH，可随时撤销）：
+**推荐三步**：
+
+1. 解压到 **`C:\snap`**（路径尽量别带空格和中文，最省事）。包里已经带了安装脚本：
+   `snap.exe`、`add-to-path.bat`、`add-to-path.ps1`、`使用说明.txt`、`README.md`、`CHANGELOG.md`、`LICENSE`。
+2. **双击 `add-to-path.bat`** —— 它把 `C:\snap` 加进「当前用户」的 PATH（不需要管理员），
+   改前会自动把原 PATH 备份到 `%TEMP%`。
+3. **重新开一个终端窗口**，之后在任何目录都能直接敲 `snap`。
+
+不想装 PATH 也行：在项目目录里执行 `C:\snap\snap.exe -t` 即可。
+
+安装脚本的其它用法：
+
+| 操作 | 命令 |
+| --- | --- |
+| 先看会改什么，不真正修改 | `add-to-path.bat /dry-run` |
+| 加入系统 PATH（所有用户，需管理员） | 右键以管理员身份运行 `add-to-path.bat /machine` |
+| 从 PATH 移除 | `add-to-path.bat /remove` |
+
+也可以直接用 PowerShell：`add-to-path.ps1 -Scope User|Machine -Remove -DryRun`。
+脚本默认只改当前用户，不动系统级设置；用的是直接读写注册表，不用 `setx`
+（`setx` 在 PATH 超过 1024 字符时会截断）。
 
 | 操作 | 命令 |
 | --- | --- |

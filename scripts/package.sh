@@ -33,6 +33,10 @@ mkdir -p "$STAGE"
 cp "$CRATE/target/release/$BIN" "$STAGE/"
 cp "$ROOT/README.md" "$ROOT/LICENSE" "$STAGE/"
 if [ -f "$ROOT/CHANGELOG.md" ]; then cp "$ROOT/CHANGELOG.md" "$STAGE/"; fi
+# 安装脚本与说明放在 snap.exe 旁边：解压后双击 add-to-path.bat 即可
+for f in add-to-path.bat add-to-path.ps1 使用说明.txt; do
+    if [ -f "$ROOT/scripts/$f" ]; then cp "$ROOT/scripts/$f" "$STAGE/"; fi
+done
 cp "$CRATE/README.md" "$STAGE/README-设计与性能.md"
 
 # 打包（Windows 用 PowerShell 的 Compress-Archive，其它平台用 zip）
