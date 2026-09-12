@@ -14,6 +14,23 @@
 - **大文件不慌**：流式读写（内存与文件大小无关）+ 多线程分块压缩
 - 跨平台（Windows / Linux / macOS），仓库可在系统之间复制
 
+## 安装
+
+从 [Releases](https://github.com/dongyue12/snap/releases) 下载 `snap-<版本>-<平台>.zip`，
+解压后把 `snap.exe` 放到任意目录即可（单文件，无运行时依赖）。
+
+想在任何目录直接敲 `snap`，用 `scripts` 里的脚本把它所在目录加进 PATH
+（放在 `snap.exe` 旁边，双击 .bat 也行；改前会自动备份原 PATH，可随时撤销）：
+
+| 操作 | 命令 |
+| --- | --- |
+| 加入当前用户 PATH（不需要管理员） | `add-to-path.bat` |
+| 加入系统 PATH（需要管理员） | `add-to-path.bat /machine` |
+| 先看会改什么，不真正修改 | `add-to-path.bat /dry-run` |
+| 从 PATH 移除 | `add-to-path.bat /remove` |
+
+也可以直接用 PowerShell：`scripts/add-to-path.ps1 -Scope User|Machine -Remove -DryRun`。
+
 ## 快速开始
 
 ```bash
@@ -130,6 +147,10 @@ git commit -am "发布 1.0.1"
 git tag v1.0.1
 git push && git push --tags
 ```
+
+## 更新日志
+
+见 [CHANGELOG.md](CHANGELOG.md)。
 
 ## 许可证
 

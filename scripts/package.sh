@@ -32,6 +32,7 @@ rm -rf "$STAGE"
 mkdir -p "$STAGE"
 cp "$CRATE/target/release/$BIN" "$STAGE/"
 cp "$ROOT/README.md" "$ROOT/LICENSE" "$STAGE/"
+if [ -f "$ROOT/CHANGELOG.md" ]; then cp "$ROOT/CHANGELOG.md" "$STAGE/"; fi
 cp "$CRATE/README.md" "$STAGE/README-设计与性能.md"
 
 # 打包（Windows 用 PowerShell 的 Compress-Archive，其它平台用 zip）
