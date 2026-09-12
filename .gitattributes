@@ -1,0 +1,15 @@
+# 文本文件统一以 LF 存进仓库：跨平台一致，也避免 shell 脚本在
+# Linux/macOS 上因为 CRLF 而报 "bad interpreter"
+* text=auto eol=lf
+
+# 明确一下几类文件
+*.rs    text eol=lf
+*.toml  text eol=lf
+*.md    text eol=lf
+*.sh    text eol=lf
+*.yml   text eol=lf
+
+# 二进制不要动
+*.iso   binary
+*.png   binary
+*.ico   binary
