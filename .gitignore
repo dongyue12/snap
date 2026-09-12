@@ -1,0 +1,14 @@
+# 编译产物
+target/
+
+# snap 自己的版本库数据（和 .git 一样属于本地状态，不进仓库）
+.snap/
+
+# 测试沙箱：由 tests/scenario.sh 生成，里面有 15GB 性能测试镜像
+test/
+
+# 编辑器 / 系统
+.vscode/
+.idea/
+*.swp
+.DS_Store

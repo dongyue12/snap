@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+  workflow_dispatch:
+
+defaults:
+  run:
+    working-directory: rust/snap
+
+jobs:
+  test:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: rust/snap
+
+      - name: 格式检查
+        run: cargo fmt --check
+
+      - name: 静态检查
+        run: cargo clippy --all-targets -- -D warnings
+
+      - name: 测试（单元 + 命令行集成）
+        run: cargo test
+
+      - name: 场景测试（真实文件上跑一遍全部命令）
+        shell: bash
+        run: SNAP_SANDBOX="$RUNNER_TEMP/snap-sandbox" bash tests/scenario.sh

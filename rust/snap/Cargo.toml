@@ -1,0 +1,25 @@
+[package]
+name = "snap"
+version = "1.0.0"
+edition = "2024"
+rust-version = "1.85"
+description = "极简项目版本快照工具：整目录打快照，存一个版本、切回一个版本"
+license = "MIT"
+repository = "https://github.com/dongyue/snap"   # TODO: 改成你实际的仓库地址
+readme = "README.md"
+keywords = ["version-control", "snapshot", "backup", "vcs", "command-line"]
+categories = ["command-line-utilities", "development-tools"]
+
+[dependencies]
+# 只用来提供底层能力：zlib、sha1、JSON 解析、本地时间。
+# 忽略规则、版本ID计算、版本JSON写出格式、分块容器都是本仓库自己实现。
+flate2 = "1"
+sha1 = "0.10"
+serde_json = "1"
+chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+strip = true
