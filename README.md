@@ -113,6 +113,24 @@ SNAP_SANDBOX=/tmp/snap-box bash tests/scenario.sh   # 109 项场景检查
 只在对象库有残留时起作用。适用的场景是"一个人给一个项目做本地快照"，
 不适合多人协作或需要历史改写的场合。
 
+## 发布
+
+本地打包（Windows 上用 git-bash）：
+
+```bash
+bash scripts/package.sh        # 产出 dist/snap-<版本>-<目标平台>.zip 与 .sha256
+```
+
+自动发布：推一个标签即可，GitHub Actions 会跑完检查、打包并创建 Release
+（标签必须与 `Cargo.toml` 里的版本一致，否则会中止）：
+
+```bash
+# 先把 Cargo.toml 里的 version 改成 1.0.1
+git commit -am "发布 1.0.1"
+git tag v1.0.1
+git push && git push --tags
+```
+
 ## 许可证
 
 [MIT](LICENSE) © 2026 dongyue
