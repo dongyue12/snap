@@ -11,6 +11,20 @@ const BIN: &str = env!("CARGO_BIN_EXE_snap");
 
 // ---------------------------------------------------------------- 测试脚手架
 
+/// 恢复文件可写。Windows 用只读位；Unix 上显式设回 0644——
+/// 只调 set_readonly(false) 在 Unix 上会变成全局可写（clippy 会告警）。
+#[allow(clippy::permissions_set_readonly_false)]
+fn restore_writable(path: &Path) {
+    let mut perm = fs::metadata(path).expect("读取权限").permissions();
+    perm.set_readonly(false);
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        perm.set_mode(0o644);
+    }
+    fs::set_permissions(path, perm).expect("恢复权限");
+}
+
 /// 独立临时目录，测试结束自动清理。
 struct Tmp(PathBuf);
 
@@ -524,9 +538,7 @@ fn read_only_file_is_caught_by_preflight() {
     let o = run_with_stdin(t.path(), &["-c", &v1[..6]], "y\n");
 
     // 恢复可写，避免影响清理
-    let mut perm = fs::metadata(&f).unwrap().permissions();
-    perm.set_readonly(false);
-    fs::set_permissions(&f, perm).unwrap();
+    restore_writable(&f);
 
     assert_ne!(o.code, 0);
     assert!(!o.err.contains("panicked"), "不该崩溃: {}", o.err);

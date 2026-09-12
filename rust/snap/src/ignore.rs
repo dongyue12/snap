@@ -242,7 +242,7 @@ mod tests {
 
     #[test]
     fn comments_and_blank_lines() {
-        let p = compile(vec!["", "  ", "# 注释", "*.tmp"].into_iter());
+        let p = compile(vec!["", "  ", "# 注释", "*.tmp"]);
         assert_eq!(p.len(), 1);
         assert!(is_ignored("x.tmp", &p, false));
     }
