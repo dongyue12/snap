@@ -125,8 +125,18 @@ echo "================================================================"
 out=$(run -i)
 chk "$(has '初始化完成' "$out")" "init 成功" "$out"
 # 沙箱在别的仓库里才会提示"嵌套仓库"，独立位置则不提示
-NESTED=0; d="$W"
-while [ "$d" != "/" ] && [ -n "$d" ]; do d="$(dirname "$d")"; if [ -d "$d/.snap" ]; then NESTED=1; break; fi; done
+# 向上找外层仓库。这里不能用 while [ "$d" != "/" ]：
+# Windows 上 $W 可能是 D:\_temp\... 这种反斜杠形式，dirname 永远退不到 "/"，
+# 会变成死循环（CI 上就卡在这里）。改成"父目录等于自己就停" + 层数上限双保险。
+NESTED=0; d="$W"; depth=0
+while :; do
+  depth=$((depth + 1))
+  [ "$depth" -gt 16 ] && break
+  parent="$(dirname "$d")"
+  [ "$parent" = "$d" ] && break
+  d="$parent"
+  if [ -d "$d/.snap" ]; then NESTED=1; break; fi
+done
 if [ "$NESTED" = "1" ]; then
   chk "$(has '嵌套仓库' "$out")" "提示成为嵌套仓库" "$out"
 else

@@ -36,9 +36,15 @@ jobs:
 
       # 场景测试会自己在 target/release 与 target/debug 里找可执行文件：
       # 前面只跑过 cargo test，所以它会用 debug 产物；都找不到时自己构建。
+      # 加 timeout 兜底：脚本万一卡住也让这一步快速失败，而不是耗到 job 超时
       - name: 场景测试（真实文件上跑一遍全部命令）
         shell: bash
-        run: SNAP_SANDBOX="$RUNNER_TEMP/snap-sandbox" bash tests/scenario.sh
+        run: |
+          if command -v timeout >/dev/null 2>&1; then
+            SNAP_SANDBOX="$RUNNER_TEMP/snap-sandbox" timeout 900 bash tests/scenario.sh
+          else
+            SNAP_SANDBOX="$RUNNER_TEMP/snap-sandbox" bash tests/scenario.sh
+          fi
 
       - name: 打包（可执行文件 + README + LICENSE，并输出 SHA256）
         shell: bash

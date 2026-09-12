@@ -50,7 +50,12 @@ jobs:
 
       - name: 场景测试
         shell: bash
-        run: SNAP_SANDBOX="$RUNNER_TEMP/snap-sandbox" bash tests/scenario.sh
+        run: |
+          if command -v timeout >/dev/null 2>&1; then
+            SNAP_SANDBOX="$RUNNER_TEMP/snap-sandbox" timeout 900 bash tests/scenario.sh
+          else
+            SNAP_SANDBOX="$RUNNER_TEMP/snap-sandbox" bash tests/scenario.sh
+          fi
 
       - name: 打包（含 SHA256）
         shell: bash
