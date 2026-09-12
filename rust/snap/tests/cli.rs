@@ -999,3 +999,19 @@ fn thread_count_is_configurable() {
     assert_eq!(o.code, 0, "{}", o.all());
     assert_eq!(t.read("big.bin"), big, "线程数不影响结果");
 }
+
+/// --version 输出包版本
+#[test]
+fn version_flag() {
+    let t = repo("version");
+    for flag in ["--version", "-V"] {
+        let o = run(t.path(), &[flag]);
+        assert_eq!(o.code, 0, "{}", o.all());
+        assert_eq!(
+            o.out.trim(),
+            format!("snap {}", env!("CARGO_PKG_VERSION")),
+            "{}",
+            o.out
+        );
+    }
+}

@@ -85,6 +85,10 @@ fn run() -> i32 {
         winout::out("\n");
         return 1;
     }
+    if argv.iter().any(|a| a == "-V" || a == "--version") {
+        outln!("{prog} {}", env!("CARGO_PKG_VERSION"));
+        return 0;
+    }
     if argv.iter().any(|a| a == "-h" || a == "--help") {
         winout::out(&docs::render_help(&prog));
         winout::out("\n");
